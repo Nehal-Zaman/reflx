@@ -70,5 +70,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 For more information, please refer to the [GitHub repository](https://github.com/Nehal-Zaman/reflx).
 
-**Author:** Nehal Zaman (n3hal_)
+**Author:** Nehal Zaman ([n3hal_](https://twitter.com/n3hal_))
+
 **Contact:** nehalcodes@gmail.com
