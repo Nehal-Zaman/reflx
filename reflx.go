@@ -11,13 +11,15 @@ import (
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/Nehal-Zaman/reflx/colors"
 )
 
 var wg sync.WaitGroup
 
 func main() {
 
-	urlfile, threads := GetUrlListFileName()
+	urlfile, threads, silence := GetUrlListFileName()
 	var urlList = make([]string, 0)
 
 	if urlfile == "" {
@@ -36,7 +38,7 @@ func main() {
 		go func() {
 			defer wg.Done()
 			for urlInput := range urlChan {
-				CheckReflection(urlInput)
+				CheckReflection(urlInput, silence)
 			}
 		}()
 	}
@@ -49,10 +51,10 @@ func main() {
 	wg.Wait()
 }
 
-func CheckReflection(urlInput string) {
+func CheckReflection(urlInput string, silence bool) {
 	urlParsed, err := url.Parse(urlInput)
 	if err != nil {
-		fmt.Println(err)
+		SilentErrPrint(err, silence)
 		return
 	}
 
@@ -74,19 +76,27 @@ func CheckReflection(urlInput string) {
 			new_url += "#" + urlParsed.Fragment
 		}
 
-		resp_contents := MakeHTTPRequest(new_url)
+		resp_contents := MakeHTTPRequest(new_url, silence)
 		for k := range paramMap {
 			if strings.Contains(resp_contents, paramMap[k]) {
-				fmt.Printf("Parameter '%v' is reflected in %v\n", k, new_url)
+				fmt.Fprintf(os.Stdout, colors.White("Parameter '")+colors.GreenBold(k)+colors.White("' is reflected in: ")+colors.BlueBold(urlInput)+"\n")
 			}
 		}
 	}
 }
 
-func MakeHTTPRequest(urlInput string) string {
+func SilentErrPrint(err error, silence bool) {
+	if err != nil {
+		if !silence {
+			fmt.Fprintf(os.Stderr, colors.Red(err.Error())+"\n")
+		}
+	}
+}
+
+func MakeHTTPRequest(urlInput string, silence bool) string {
 	resp, err := http.Get(urlInput)
 	if err != nil {
-		fmt.Println(err)
+		SilentErrPrint(err, silence)
 		return ""
 	}
 
@@ -127,12 +137,13 @@ func checkErr(err error) {
 	}
 }
 
-func GetUrlListFileName() (string, int) {
+func GetUrlListFileName() (string, int, bool) {
 	urlfilePtr := flag.String("list", "", "specify a file containing URL list")
 	threadsPtr := flag.Int("threads", 10, "specify number of threads to use")
+	silentPtr := flag.Bool("silent", false, "suppress the error messages")
 	flag.Parse()
 
-	return *urlfilePtr, *threadsPtr
+	return *urlfilePtr, *threadsPtr, *silentPtr
 }
 
 func GetUrlsFromStdin() []string {
